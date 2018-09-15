@@ -42,7 +42,16 @@ class ContFramePool {
     
 private:
     /* -- DEFINE YOUR CONT FRAME POOL DATA STRUCTURE(s) HERE. */
+    unsigned char * bitmap1;
+    unsigned char * bitmap2;
+    unsigned int    nFreeFrames;
+    unsigned long   base_frame_no;  
+    unsigned long   nframes;       
+    unsigned long   info_frame_no;
     
+    static ContFramePool* pools;
+    ContFramePool* prev;
+    ContFramePool* next;
 public:
 
     // The frame size is the same as the page size, duh...    

@@ -180,15 +180,42 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    unsigned int frame_no = base_frame_no;
+    unsigned int available = 0;
+    while(frame_no < base_frame_no + nframes){
+        if(available == _n_frames){
+            mark_inaccessible(frame_no - available, _n_frames);
+            return frame_no - available;
+        }
+        
+        unsigned int i = (frame_no - base_frame_no) / 8;
+        unsigned int j = (frame_no - base_frame_no) % 8;
+        unsigned char mask = 0x80;
+        if(bitmap1[i]&(mask>>j)){
+            available += 1;
+        }
+        else{
+            available = 0;
+        }
+        frame_no += 1;
+    }
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    int i;
+    for(i = _base_frame_no; i < _base_frame_no + _n_frames; i++){
+        unsigned int bitmap_index = (i - _base_frame_no) / 8;
+        unsigned char mask = 0x80 >> ((i - _base_frame_no) % 8);
+        // Update bitmap. 00 for used, 01 for head
+        bitmap1[bitmap_index] ^= mask;
+        bitmap2[bitmap_index] ^= mask;
+        if(i==_base_frame_no){
+            bitmap2[bitmap_index] |= mask;
+        }
+        nFreeFrames--;
+    }
 }
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
@@ -202,3 +229,4 @@ unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
     // TODO: IMPLEMENTATION NEEEDED!
     assert(false);
 }
+
