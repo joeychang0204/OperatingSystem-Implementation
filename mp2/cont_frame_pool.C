@@ -109,7 +109,7 @@
 /* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
 
-/* -- (none) -- */
+ContFramePool* ContFramePool::pools;
 
 /*--------------------------------------------------------------------------*/
 /* CONSTANTS */
@@ -133,7 +133,49 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _n_info_frames)
 {
     // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    
+    base_frame_no = _base_frame_no;
+    nframes = _n_frames;
+    nFreeFrames = _n_frames;
+    info_frame_no = _info_frame_no;
+    
+    assert(nframes <= FRAME_SIZE * 8)
+    // Number of frames must be "fill" the bitmap!
+    assert ((nframes % 8 ) == 0);
+    
+    // If _info_frame_no is zero then we keep management info in the first
+    //frame, else we use the provided frame to keep management info
+    if(info_frame_no == 0){
+        bitmap1 = (unsigned char *) (base_frame_no * FRAME_SIZE);
+    }
+    else{
+        bitmap1 = (unsigned char *) (info_frame_no * FRAME_SIZE);
+    }
+    // use bitmap2 to save the second bit representing status
+    bitmap2 = bitmap1 + (nframes / 8 + 1);
+    
+    // Everything ok. Proceed to mark all bits in the bitmap
+    for(int i=0; i*8 < nframes; i++) {
+        bitmap1[i] = 0xFF;
+        bitmap2[i] = 0xFF;
+    }
+    
+    // Mark the first frame as being used if it is being used
+    if(_info_frame_no == 0) {
+        bitmap1[0] = 0x7F;
+        bitmap2[0] = 0x7F;
+        nFreeFrames--;
+    }
+    
+    if(!pools){
+        pools = this;
+    }
+    else{
+        pools -> next = this;
+    }
+    prev = pools;
+    
+    Console::puts("Frame Pool initialized\n");
 }
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
