@@ -182,10 +182,6 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     unsigned int frame_no = 0;
     unsigned int available = 0;
     while(frame_no < nframes){
-        if(available == _n_frames){
-            mark_inaccessible(frame_no - available, _n_frames);
-            return frame_no - available + base_frame_no + 1;
-        }
         
         unsigned int bitmap_index = frame_no / 8;
         unsigned char mask = 0x80 >> (frame_no % 8);
@@ -194,6 +190,11 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
         }
         else{
             available = 0;
+        }
+        //found enough available space, call mark_inaccessible
+        if(available == _n_frames){
+            mark_inaccessible(frame_no - available + 1, _n_frames);
+            return frame_no - available + 1 + base_frame_no;
         }
         frame_no += 1;
     }
@@ -220,6 +221,7 @@ void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
+    //Go through the pools to find the specified frame
     ContFramePool* cur= ContFramePool::pools;
     while(cur->base_frame_no + cur->nframes <= _first_frame_no){
         if(cur->next){
@@ -246,7 +248,6 @@ void ContFramePool::release_frames(unsigned long _first_frame_no)
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    return  _n_frames/8 +(_n_frames % 8 > 0 ? 1 : 0);
+    return _n_frames * 2 / (8 * FRAME_SIZE) + (_n_frames % (8 * FRAME_SIZE) > 0 ? 1 : 0);
 }
 
