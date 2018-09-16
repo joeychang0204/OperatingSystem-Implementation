@@ -119,6 +119,7 @@ void test_memory(ContFramePool * _pool, unsigned int _allocs_to_go) {
         test_memory(_pool, _allocs_to_go - 1);
         for (int i = 0; i < (1 KB) * n_frames; i++) {
             if(value_array[i] != _allocs_to_go){
+                
                 Console::puts("MEMORY TEST FAILED. ERROR IN FRAME POOL\n");
                 Console::puts("i ="); Console::puti(i);
                 Console::puts("   v = "); Console::puti(value_array[i]); 

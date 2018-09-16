@@ -1,7 +1,7 @@
 /*
  File: ContFramePool.C
  
- Author:
+ Author:Tsao Yuan Chang
  Date  : 
  
  */
@@ -151,7 +151,8 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
         bitmap1 = (unsigned char *) (info_frame_no * FRAME_SIZE);
     }
     // use bitmap2 to save the second bit representing status
-    bitmap2 = bitmap1 + (nframes / 8 + 1);
+    // 11->available, 01->head of sequence, 00->allocated
+    bitmap2 = bitmap1 + 1024;
     
     // Everything ok. Proceed to mark all bits in the bitmap
     for(int i=0; i*8 < nframes; i++) {
@@ -183,13 +184,12 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     while(frame_no < nframes){
         if(available == _n_frames){
             mark_inaccessible(frame_no - available, _n_frames);
-            return frame_no - available + base_frame_no;
+            return frame_no - available + base_frame_no + 1;
         }
         
-        unsigned int i = (frame_no - base_frame_no) / 8;
-        unsigned int j = (frame_no - base_frame_no) % 8;
-        unsigned char mask = 0x80;
-        if(bitmap1[i]&(mask>>j)){
+        unsigned int bitmap_index = frame_no / 8;
+        unsigned char mask = 0x80 >> (frame_no % 8);
+        if(bitmap1[bitmap_index] & mask){
             available += 1;
         }
         else{
@@ -203,13 +203,15 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    int i;
-    for(i = _base_frame_no; i < _base_frame_no + _n_frames; i++){
-        unsigned int bitmap_index = (i - _base_frame_no) / 8;
-        unsigned char mask = 0x80 >> ((i - _base_frame_no) % 8);
+    unsigned int i;
+    for(i = _base_frame_no ; i < _base_frame_no + _n_frames; i++){
+        unsigned int bitmap_index = i / 8;
+        unsigned char mask = 0x80 >> (i % 8);
         // Update bitmap. 00 for used, 01 for head
-        bitmap1[bitmap_index] ^= mask;
+        
+        bitmap1[bitmap_index] = bitmap1[bitmap_index]^mask;
         bitmap2[bitmap_index] ^= mask;
+        // hadling head of sequence
         if(i==_base_frame_no){
             bitmap2[bitmap_index] |= mask;
         }
@@ -218,13 +220,33 @@ void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    ContFramePool* cur=ContFramePool::pools;
-    
+    ContFramePool* cur= ContFramePool::pools;
+    while(cur->base_frame_no + cur->nframes <= _first_frame_no){
+        if(cur->next){
+            cur = cur->next;
+        }
+        else{
+            Console::puts("Error, invalid first_frame_no.");
+            assert(false);
+        }
+    }
+    int i;
+    for(i = _first_frame_no - cur->base_frame_no; i < cur->nframes; i++){
+        unsigned int bitmap_index = i / 8;
+        unsigned char mask = 0x80 >> (i  % 8);
+        if(i>_first_frame_no - cur->base_frame_no && cur->bitmap2[bitmap_index] & mask != 0x00){
+            //01 for next head or 11 for not using frame
+            break;
+        }
+        //releasing, set to 11 
+        cur->bitmap1[bitmap_index] |= mask;
+        cur->bitmap2[bitmap_index] |= mask;
+    }
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
     // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    return  _n_frames/8 +(_n_frames % 8 > 0 ? 1 : 0);
 }
 
