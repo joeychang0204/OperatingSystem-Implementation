@@ -136,7 +136,6 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
     
     base_frame_no = _base_frame_no;
     nframes = _n_frames;
-    nFreeFrames = _n_frames;
     info_frame_no = _info_frame_no;
     
     assert(nframes <= FRAME_SIZE * 8)
@@ -164,7 +163,6 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
     if(_info_frame_no == 0) {
         bitmap1[0] = 0x7F;
         bitmap2[0] = 0x7F;
-        nFreeFrames--;
     }
     
     if(!pools){
@@ -180,12 +178,12 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
-    unsigned int frame_no = base_frame_no;
+    unsigned int frame_no = 0;
     unsigned int available = 0;
-    while(frame_no < base_frame_no + nframes){
+    while(frame_no < nframes){
         if(available == _n_frames){
             mark_inaccessible(frame_no - available, _n_frames);
-            return frame_no - available;
+            return frame_no - available + base_frame_no;
         }
         
         unsigned int i = (frame_no - base_frame_no) / 8;
@@ -199,6 +197,7 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
         }
         frame_no += 1;
     }
+    return 0;
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
@@ -214,14 +213,13 @@ void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
         if(i==_base_frame_no){
             bitmap2[bitmap_index] |= mask;
         }
-        nFreeFrames--;
     }
 }
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    ContFramePool* cur=ContFramePool::pools;
+    
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
