@@ -56,7 +56,7 @@ typedef enum {
    LIGHT_RED     = 12, 	
    LIGHT_MAGENTA = 13, 	
    LIGHT_BROWN   = 14, 	
-   WHITE	 = 15 	
+   WHITE	     = 15 	
 } COLOR_CODE;
 
 

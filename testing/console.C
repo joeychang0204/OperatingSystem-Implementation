@@ -21,6 +21,7 @@
 #include "console.H"
 
 #include "utils.H"
+#include "machine.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -75,7 +76,7 @@ void Console::scroll() {
         /* Move the current text chunk that makes up the screen
         *  back in the buffer by a line */
         unsigned temp = csr_y - 25 + 1;
-        memcpy ((char*)textmemptr, (char*)textmemptr + temp * 80, (25 - temp) * 80 * 2);
+        memcpy ((char*)textmemptr, (char*)(textmemptr + temp * 80), (25 - temp) * 80 * 2);
 
         /* Finally, we set the chunk of memory that occupies
         *  the last line of text to our 'blank' character */
@@ -99,9 +100,9 @@ void Console::move_cursor() {
     *  learn more, you should look up some VGA specific
     *  programming documents. A great start to graphics:
     *  http://www.brackeen.com/home/vga */
-    outportb(0x3D4, (char)14);
+    Machine::outportb(0x3D4, (char)14);
     //outportb(0x3D5, temp >> 8);
-    outportb(0x3D4, 15);
+    Machine::outportb(0x3D4, 15);
     //outportb(0x3D5, (char)temp);
 }
 
@@ -144,6 +145,7 @@ void Console::putch(const char _c){
     else if(_c == '\r')
     {
         csr_x = 0;
+        Machine::outportb(0xe9, '\r');
     }
     /* We handle our newlines the way DOS and the BIOS do: we
     *  treat it as if a 'CR' was also there, so we bring the
@@ -152,6 +154,7 @@ void Console::putch(const char _c){
     {
         csr_x = 0;
         csr_y++;
+        Machine::outportb(0xe9, '\n');
     }
     /* Any character greater than and including a space, is a
     *  printable character. The equation for finding the index
@@ -162,6 +165,7 @@ void Console::putch(const char _c){
         unsigned short * where = textmemptr + (csr_y * 80 + csr_x);
         *where = _c | (attrib << 8);	/* Character AND attributes: color */
         csr_x++;
+        Machine::outportb(0xe9, _c);
     }
 
     /* If the cursor has reached the edge of the screen's width, we
