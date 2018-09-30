@@ -1,8 +1,8 @@
 /*
  File: ContFramePool.C
  
- Author:
- Date  : 
+ Author: Tsao Yuan Chang
+ Date  : 09/16/2018
  
  */
 
@@ -109,7 +109,7 @@
 /* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
 
-/* -- (none) -- */
+ContFramePool* ContFramePool::pools;
 
 /*--------------------------------------------------------------------------*/
 /* CONSTANTS */
@@ -128,35 +128,126 @@
 /*--------------------------------------------------------------------------*/
 
 ContFramePool::ContFramePool(unsigned long _base_frame_no,
-                             unsigned long _nframes,
+                             unsigned long _n_frames,
                              unsigned long _info_frame_no,
                              unsigned long _n_info_frames)
 {
     // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    
+    base_frame_no = _base_frame_no;
+    nframes = _n_frames;
+    info_frame_no = _info_frame_no;
+    
+    assert(nframes <= FRAME_SIZE * 8)
+    // Number of frames must be "fill" the bitmap!
+    assert ((nframes % 8 ) == 0);
+    
+    // If _info_frame_no is zero then we keep management info in the first
+    //frame, else we use the provided frame to keep management info
+    if(info_frame_no == 0){
+        bitmap1 = (unsigned char *) (base_frame_no * FRAME_SIZE);
+    }
+    else{
+        bitmap1 = (unsigned char *) (info_frame_no * FRAME_SIZE);
+    }
+    // use bitmap2 to save the second bit representing status
+    // 11->available, 01->head of sequence, 00->allocated
+    bitmap2 = bitmap1 + (nframes / 8) + 1;
+    
+    // Everything ok. Proceed to mark all bits in the bitmap
+    for(int i=0; i*8 < nframes; i++) {
+        bitmap1[i] = 0xFF;
+        bitmap2[i] = 0xFF;
+    }
+    
+    // Mark the first frame as being used if it is being used
+    if(_info_frame_no == 0) {
+        bitmap1[0] = 0x7F;
+        bitmap2[0] = 0x7F;
+    }
+    
+    if(!pools){
+        pools = this;
+    }
+    else{
+        pools -> next = this;
+    }
+    prev = pools;
+    
+    Console::puts("Frame Pool initialized\n");
 }
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    unsigned int frame_no = 0;
+    unsigned int available = 0;
+    while(frame_no < nframes){
+        
+        unsigned int bitmap_index = frame_no / 8;
+        unsigned char mask = 0x80 >> (frame_no % 8);
+        if(bitmap1[bitmap_index] & mask){
+            available += 1;
+        }
+        else{
+            available = 0;
+        }
+        //found enough available space, call mark_inaccessible
+        if(available == _n_frames){
+            mark_inaccessible(frame_no - available + 1, _n_frames);
+            return frame_no - available + 1 + base_frame_no;
+        }
+        frame_no += 1;
+    }
+    return 0;
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    unsigned int i;
+    for(i = _base_frame_no ; i < _base_frame_no + _n_frames; i++){
+        unsigned int bitmap_index = i / 8;
+        unsigned char mask = 0x80 >> (i % 8);
+        // Update bitmap. 00 for used, 01 for head
+        
+        bitmap1[bitmap_index] ^= mask;
+        bitmap2[bitmap_index] ^= mask;
+        // handling head of sequence
+        if(i==_base_frame_no){
+            bitmap2[bitmap_index] |= mask;
+        }
+    }
 }
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    //Go through the pools to find the specified frame
+    ContFramePool* cur= ContFramePool::pools;
+    while(cur->base_frame_no + cur->nframes <= _first_frame_no){
+        if(cur->next){
+            cur = cur->next;
+        }
+        else{
+            Console::puts("Error, invalid first_frame_no.");
+            assert(false);
+        }
+    }
+    int i;
+    for(i = _first_frame_no - cur->base_frame_no; i < cur->nframes; i++){
+        unsigned int bitmap_index = i / 8;
+        unsigned char mask = 0x80 >> (i  % 8);
+        if(i>_first_frame_no - cur->base_frame_no && cur->bitmap2[bitmap_index] & mask != 0x00){
+            //01 for next head or 11 for not using frame
+            break;
+        }
+        //releasing, set to 11 
+        cur->bitmap1[bitmap_index] |= mask;
+        cur->bitmap2[bitmap_index] |= mask;
+    }
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    return _n_frames * 2 / (8 * FRAME_SIZE) + (_n_frames % (8 * FRAME_SIZE) > 0 ? 1 : 0);
 }
+
