@@ -74,9 +74,11 @@ void PageTable::handle_fault(REGS * _r)
     
     if((err_code & 1) == 0){
         if(page_dir[address >> 22] & 1 == 1){
+            //present, page fault at page table
             new_page_table[page_table_address & 0x03FF] = PageTable::process_mem_pool->get_frames(1) * PAGE_SIZE | 3;
         }
         else{
+            //need new table in this directory
             page_dir[page_dir_address] = (unsigned long)(kernel_mem_pool->get_frames(1) * PAGE_SIZE | 3);
             for(int i=0; i<1024; i++){
                 //user mode
