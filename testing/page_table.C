@@ -28,6 +28,7 @@ PageTable::PageTable()
     unsigned long* page_table = (unsigned long*)(kernel_mem_pool->get_frames(1)*PAGE_SIZE);
     unsigned long address = 0;
     
+    // read/write , present
     for(int i=0; i<1024; i++){
         page_table[i] = address | 3;
         address += PAGE_SIZE;
@@ -37,6 +38,7 @@ PageTable::PageTable()
     page_directory[0] |= 3;
     
     for(unsigned int i=1; i<1024; i++){
+        // read/write, not present
         page_directory[i] = 0 | 2;
     }
     Console::puts("Constructed Page Table object\n");
@@ -60,6 +62,7 @@ void PageTable::enable_paging()
 void PageTable::handle_fault(REGS * _r)
 {
     unsigned long address = read_cr2();
+    //first 10 bits for page_dir, middle 10 bits for page_table
     unsigned long page_dir_address = address >> 22;
     unsigned long page_table_address = address >> 12;
     
@@ -71,11 +74,14 @@ void PageTable::handle_fault(REGS * _r)
     
     if((err_code & 1) == 0){
         if(page_dir[address >> 22] & 1 == 1){
+            //present, page fault at page table
             new_page_table[page_table_address & 0x03FF] = PageTable::process_mem_pool->get_frames(1) * PAGE_SIZE | 3;
         }
         else{
+            //need new table in this directory
             page_dir[page_dir_address] = (unsigned long)(kernel_mem_pool->get_frames(1) * PAGE_SIZE | 3);
             for(int i=0; i<1024; i++){
+                //user mode
                 new_page_table[i] = 4;
             }
             new_page_table[page_table_address & 0x03FF] = PageTable::process_mem_pool->get_frames(1) * PAGE_SIZE | 3;
