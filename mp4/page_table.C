@@ -11,46 +11,127 @@ ContFramePool * PageTable::process_mem_pool = NULL;
 unsigned long PageTable::shared_size = 0;
 
 
+
 void PageTable::init_paging(ContFramePool * _kernel_mem_pool,
                             ContFramePool * _process_mem_pool,
                             const unsigned long _shared_size)
 {
-    assert(false);
+    PageTable::kernel_mem_pool = _kernel_mem_pool;
+    PageTable::process_mem_pool = _process_mem_pool;
+    PageTable::shared_size = _shared_size;
     Console::puts("Initialized Paging System\n");
 }
 
 PageTable::PageTable()
 {
-    assert(false);
+    page_directory = (unsigned long*)(process_mem_pool->get_frames(1)*PAGE_SIZE);
+    unsigned long* page_table = (unsigned long*)(process_mem_pool->get_frames(1)*PAGE_SIZE);
+    unsigned long address = 0;
+    
+    // read/write , present
+    for(int i=0; i<1024; i++){
+        page_table[i] = address | 3;
+        address += PAGE_SIZE;
+    }
+    
+    page_directory[0] = (unsigned long) page_table;
+    page_directory[0] |= 3;
+    
+    for(unsigned int i=1; i<1023; i++){
+        // read/write, not present
+        page_directory[i] = 0 | 2;
+    }
+    //point the last to the PD's beginning
+    page_directory[1023] = (unsigned long)page_directory | 3;
+    
+    registered_num = 0;
+    for(int i=0; i<100; i++){
+        registered_vmpools[i] = NULL;
+    }
     Console::puts("Constructed Page Table object\n");
 }
 
 
 void PageTable::load()
 {
-    assert(false);
+    current_page_table = this;
     Console::puts("Loaded page table\n");
 }
 
 void PageTable::enable_paging()
 {
-    assert(false);
+    write_cr3((unsigned long)current_page_table->page_directory);
+    paging_enabled = 1;
+    write_cr0(read_cr0() | 0x80000000);
     Console::puts("Enabled paging\n");
 }
 
 void PageTable::handle_fault(REGS * _r)
 {
-    assert(false);
-    Console::puts("handled page fault\n");
+    unsigned long address = read_cr2();
+    //page_dir address : 1023 1023 X (original : X Y offset)
+    unsigned long *page_dir_address = (unsigned long*)(((address>>22) <<2) | (0xFFFFF<<12));
+    //page_table address : 1023 X Y (original : X Y offset)
+    unsigned long *page_table_address = (unsigned long*)(((address>>12) <<2) |(0x3FF << 22));
+    unsigned long err_code = _r->err_code;
+    
+    if((err_code & 1) == 0){
+        VMPool** vm_pools = current_page_table->registered_vmpools;
+        //find the valid vm pool
+        int pos = -1;
+        for(int i = 0; i < current_page_table->registered_num; i++){
+            if(vm_pools[i] != NULL && vm_pools[i]->is_legitimate(address)){
+                pos = i;
+                break;
+            }
+        }
+        if(pos != -1){
+            //successfully found valid vm pool
+            if(*page_dir_address & 1 == 1){
+                *page_table_address = PageTable::process_mem_pool->get_frames(1);
+                *page_table_address = (*page_table_address << 12) | 5;
+            }
+            else{
+                *page_dir_address = PageTable::process_mem_pool->get_frames(1);
+                *page_dir_address = (*page_dir_address << 12) | 3;
+                
+                address = (address>>22)<<22;
+                for(int i=0; i<1024; i++){
+                    unsigned long* tmp = (unsigned long*) (((address >> 12) << 2 ) | (0x03FF<<22));
+                    *tmp = 4;
+                    address = ((address>>12)+1)<<12;
+                }
+                
+                *page_table_address = PageTable::process_mem_pool->get_frames(1);
+                *page_table_address =  (*page_table_address << 12) | 3;
+            }
+            
+        }
+    }
+    
+  Console::puts("handled page fault\n");
 }
 
-void PageTable::register_pool(VMPool * _vm_pool)
-{
-    assert(false);
+void PageTable::register_pool(VMPool *_pool) {
+    if((this->registered_vmpools[this->registered_num]==NULL)
+       &&(registered_num<100)){
+        this->registered_vmpools[this->registered_num] = _pool;
+        this->registered_num++;
+    }
+    else
+        Console::puts("Register failed\n");
     Console::puts("registered VM pool\n");
 }
 
 void PageTable::free_page(unsigned long _page_no) {
-    assert(false);
-    Console::puts("freed page\n");
+    
+    unsigned long frame_num;
+    unsigned long *PTE_pointer;
+    PTE_pointer = (unsigned long *) (((_page_no >> 12) << 2 ) | (0x03FF<<22));
+    frame_num = (*PTE_pointer) >> 12;
+    *PTE_pointer = 0;
+    process_mem_pool->release_frames(frame_num);
+    Console::puts("Page freed\n");
+    
 }
+
