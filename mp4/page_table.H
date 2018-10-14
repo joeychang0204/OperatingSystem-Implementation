@@ -12,7 +12,6 @@
 
 #ifndef _page_table_H_                   // include file only once
 #define _page_table_H_
-
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
@@ -51,8 +50,9 @@ private:
 
   /* DATA FOR CURRENT PAGE TABLE */
   unsigned long        * page_directory;     /* where is page directory located? */
-  int registered_num;
   VMPool* registered_vmpools[100];
+  int registered_num;
+  
 
 public:
   static const unsigned int PAGE_SIZE        = Machine::PAGE_SIZE; 
