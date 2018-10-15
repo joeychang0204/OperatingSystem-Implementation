@@ -53,6 +53,7 @@ private:
   VMPool* registered_vmpools[100];
   int registered_num;
   
+  
 
 public:
   static const unsigned int PAGE_SIZE        = Machine::PAGE_SIZE; 

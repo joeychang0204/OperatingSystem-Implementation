@@ -69,7 +69,7 @@ unsigned long VMPool::allocate(unsigned long _size) {
     if(region_num == 0)
         start_addr = base_address;
     else
-        start_addr = regions[region_num].base_address + regions[region_num-1].size;
+        start_addr = regions[region_num-1].base_address + regions[region_num-1].size;
     regions[region_num].base_address = start_addr;
     regions[region_num].size = _size;
     region_num++;
