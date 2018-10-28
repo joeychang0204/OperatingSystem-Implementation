@@ -96,7 +96,7 @@ void Scheduler::yield() {
         Thread::dispatch_to(next_thread);
     }
     else{
-            assert(false);
+            //assert(false);
     }
 }
 
