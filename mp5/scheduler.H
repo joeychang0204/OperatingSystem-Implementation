@@ -49,14 +49,30 @@
      such as 'FIFOScheduler'.)
     
  */
+class Queue{
+private:
+    Thread* thread;
+    Queue* next;
+public:
+    Queue();
+    Queue(Thread* t);
+    Queue(Queue& q);
+    void enqueue(Thread* t);
+    Thread* dequeue();
+    
+};
 
 /*--------------------------------------------------------------------------*/
 /* SCHEDULER */
 /*--------------------------------------------------------------------------*/
 
+
 class Scheduler {
 
   /* The scheduler may need private members... */
+private:
+    int size;
+    Queue ready_queue;
   
 public:
 
