@@ -83,8 +83,7 @@ Thread* Queue::dequeue(){
 /* METHODS FOR CLASS   S c h e d u l e r  */
 /*--------------------------------------------------------------------------*/
 
-Scheduler::Scheduler() {
-  Queue* ready_queue = new Queue();  
+Scheduler::Scheduler() { 
   size = 0;
   Console::puts("Constructed Scheduler.\n");
 }
@@ -92,8 +91,9 @@ Scheduler::Scheduler() {
 void Scheduler::yield() {
     if(size > 0){
         size -= 1;
-        Thread* cur = ready_queue.dequeue();
-        Thread::dispatch_to(cur);
+        //find the next thread in the ready queue, dispatch to it
+        Thread* next_thread = ready_queue.dequeue();
+        Thread::dispatch_to(next_thread);
     }
     else{
             assert(false);
