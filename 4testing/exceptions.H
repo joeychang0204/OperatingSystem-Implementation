@@ -74,7 +74,7 @@ class ExceptionHandler {
   /* -- MANAGE INSTANCES OF EXCEPTION HANDLERS */
 
   virtual void handle_exception(REGS * _regs) {
-     assert(false); // sometimes pure virtual functions dont link correctly.
+     assert(false); // pure virtual functions dont link correctly.
   }
   /* Different exception handlers are derived from the base class ExceptionHandler
      and their functionality is implemented in this function.*/

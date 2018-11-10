@@ -77,7 +77,7 @@ class InterruptHandler {
   /* -- MANAGE INSTANCES OF INTERRUPT HANDLERS */
 
   virtual void handle_interrupt(REGS * _regs) {
-     assert(false); // sometimes pure virtual functions don't link correctly.
+     assert(false); // pure virtual functions don't link correctly.
   }
   /* Different interrupt handlers are derived from the base class 
      InterruptHandler, and their functionality is implemented in 
