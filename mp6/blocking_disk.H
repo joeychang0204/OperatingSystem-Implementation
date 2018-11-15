@@ -22,19 +22,29 @@
 /*--------------------------------------------------------------------------*/
 
 #include "simple_disk.H"
+#include "scheduler.H"
+#include "thread.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
+class Scheduler;
+class Queue;
 
 /*--------------------------------------------------------------------------*/
 /* B l o c k i n g D i s k  */
 /*--------------------------------------------------------------------------*/
 
 class BlockingDisk : public SimpleDisk {
+private:
+    Queue* head;
+protected:
+    void wait_until_ready();
+    void blocked_enqueue(Thread *_thread);
 public:
+   int queue_size;
    BlockingDisk(DISK_ID _disk_id, unsigned int _size); 
    /* Creates a BlockingDisk device with the given size connected to the 
       MASTER or SLAVE slot of the primary ATA controller.
@@ -43,6 +53,8 @@ public:
       disk controller. */
 
    /* DISK OPERATIONS */
+
+   void blocked_resume();
 
    virtual void read(unsigned long _block_no, unsigned char * _buf);
    /* Reads 512 Bytes from the given block of the disk and copies them 

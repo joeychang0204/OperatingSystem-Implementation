@@ -22,6 +22,7 @@
 #include "utils.H"
 #include "assert.H"
 #include "simple_keyboard.H"
+#include "blocking_disk.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */
@@ -72,6 +73,7 @@ Thread* Queue::dequeue(){
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
+extern BlockingDisk* SYSTEM_DISK;
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
@@ -89,6 +91,9 @@ Scheduler::Scheduler() {
 }
 
 void Scheduler::yield() {
+    //check the blocked-thread queue
+    if(SYSTEM_DISK && SYSTEM_DISK->queue_size > 0)
+        SYSTEM_DISK->blocked_resume();
     if(size > 0){
         size -= 1;
         //find the next thread in the ready queue, dispatch to it
