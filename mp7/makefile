@@ -55,9 +55,10 @@ simple_keyboard.o: simple_keyboard.C simple_keyboard.H
 simple_disk.o: simple_disk.C simple_disk.H
 	$(CPP) $(CPP_OPTIONS) -c -o simple_disk.o simple_disk.C
 
+
 # ==== FILE SYSTEM =====
 
-file.o: file.C file.H
+file.o: file.C file.H file_system.H simple_disk.H
 	$(CPP) $(CPP_OPTIONS) -c -o file.o file.C
 
 file_system.o: file_system.C file_system.H simple_disk.H
@@ -79,9 +80,10 @@ threads_low.o: threads_low.asm threads_low.H
 thread.o: thread.C thread.H threads_low.H
 	$(CPP) $(CPP_OPTIONS) -c -o thread.o thread.C
 
-#scheduler.o: scheduler.C scheduler.H thread.H
-#	$(CPP) $(CPP_OPTIONS) -c -o scheduler.o scheduler.C
-
+scheduler.o: scheduler.C scheduler.H thread.H
+	$(CPP) $(CPP_OPTIONS) -c -o scheduler.o scheduler.C
+blocking_disk.o: blocking_disk.C blocking_disk.H simple_disk.H thread.H scheduler.H
+	$(CPP) $(CPP_OPTIONS) -c -o blocking_disk.o blocking_disk.C
 # ==== KERNEL MAIN FILE =====
 
 kernel.o: kernel.C machine.H console.H gdt.H idt.H irq.H exceptions.H interrupts.H simple_timer.H frame_pool.H mem_pool.H thread.H simple_disk.H file.H file_system.H

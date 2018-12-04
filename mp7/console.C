@@ -182,7 +182,8 @@ void Console::putch(const char _c){
 void Console::puts(const char * _s) {
 
     for (int i = 0; i < strlen(_s); i++) {
-        putch(_s[i]);
+        Machine::outportb(0xe9,_s[i]);
+  	putch(_s[i]);
     }
 }
 
@@ -197,8 +198,10 @@ void Console::putui(const unsigned int _n) {
   char foostr[15];
 
   uint2str(_n, foostr);
+  Machine::outportb(0xe9,'<');
   putch('<');
   puts(foostr);
+  Machine::outportb(0xe9,'>');
   putch('>');
 }
 

@@ -25,7 +25,9 @@
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
-
+//#include "scheduler.H"
+//class Scheduler;
+//extern Scheduler* SYSTEM_SCHEDULER;
 /* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
@@ -62,7 +64,10 @@ protected:
      /* Return true if disk is ready to transfer data from/to disk, false otherwise. */
 
      virtual void wait_until_ready() {
-        while (!is_ready()) { /* wait */; }
+        while (!is_ready()) { 
+	//	SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
+	//	SYSTEM_SCHEDULER->yield();
+	 }
      }
      /* Is called after each read/write operation to check whether the disk is
         ready to start transfering the data from/to the disk. */

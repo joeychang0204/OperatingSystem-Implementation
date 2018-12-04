@@ -26,12 +26,21 @@
 
 #include "file.H"
 #include "simple_disk.H"
+#include "utils.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
 
-/* -- (none) -- */
+static unsigned char buffer[512];//for I/O
+
+struct BLOCK{
+    int id;
+    bool available;
+    int size;
+    unsigned int data[125];
+};
+static BLOCK* block=(BLOCK*)buffer;
 
 /*--------------------------------------------------------------------------*/
 /* FORWARD DECLARATIONS */ 
@@ -42,6 +51,7 @@
 /*--------------------------------------------------------------------------*/
 /* F i l e S y s t e m  */
 /*--------------------------------------------------------------------------*/
+class File;
 
 class FileSystem {
 
@@ -51,7 +61,10 @@ private:
      /* -- DEFINE YOUR FILE SYSTEM DATA STRUCTURES HERE. */
      
      SimpleDisk * disk;
-     unsigned int size;
+     int size;
+     File*  file_list;
+     int file_num;//number of files
+     int block_num;//current block to look for free blocks
      
 public:
 
@@ -75,6 +88,7 @@ public:
     
     bool DeleteFile(int _file_id);
     /* Delete file with given id in the file system; free any disk block occupied by the file. */
-   
+    unsigned int AllocateBlock(unsigned int desired);
+    void DeallocateBlock(unsigned int);
 };
 #endif

@@ -98,7 +98,7 @@ void operator delete[] (void * p) {
 #ifdef _USES_SCHEDULER_
 
 /* -- A POINTER TO THE SYSTEM SCHEDULER */
-Scheduler * SYSTEM_SCHEDULER;
+Scheduler * SYSTEM_SCHEDULER = new Scheduler();
 
 #endif
 
@@ -355,6 +355,7 @@ int main() {
              It is important to install a timer handler, as we 
              would get a lot of uncaptured interrupts otherwise. */  
 
+    FILE_SYSTEM = new FileSystem();
     /* -- ENABLE INTERRUPTS -- */
 
      Machine::enable_interrupts();

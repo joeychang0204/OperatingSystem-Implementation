@@ -14,6 +14,11 @@
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
+#define SYSTEM_DISK_SIZE2 10485760
+#define BLOCKSIZE 512
+#define SYSTEM_BLOCKS SYSTEM_DISK_SIZE2/BLOCKSIZE
+
+#define HEADER_SIZE 12
 
 /* -- (none) -- */
 
@@ -22,6 +27,9 @@
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
+#include "utils.H"
+#include "simple_disk.H"
+#include "file_system.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -32,15 +40,26 @@
 /*--------------------------------------------------------------------------*/
 /* class  F i l e   */
 /*--------------------------------------------------------------------------*/
+class FileSystem;
+extern FileSystem* FILE_SYSTEM;
 
 class File  {
+friend class FileSystem;
     
 private:
     /* -- your file data structures here ... */
     
     /* -- maybe it would be good to have a reference to the file system? */
+    unsigned int   file_id;
+    unsigned int   file_size; // in blocks
+    unsigned int*  blocks;//owned blocks
+    unsigned int   first_block;
+    unsigned int   cur_block; //current block position, always starts from 0
+    unsigned int   cur_location; //current location in currrent block, always starts from 0
+    unsigned int   inode_block_num;//block of file inode
     
 public:
+    char data[512];
 
     File(/* you may need arguments here; maybe a pointer to the disk block
           containing file management and file allocation data */);
